@@ -2,32 +2,6 @@
 	"Hydrosion"
 
 	Simplified hydraulic erosion on the gpu in love
-
-	Some instabilities here and there but was a fun evening project to tackle
-
-	For Matt, hope it helps!
-
-	License:
-
-	Copyright (c) 2020 Max Cahill
-
-	Permission is hereby granted, free of charge, to any person obtaining a copy of
-	this software and associated documentation files (the "Software"), to deal in
-	the Software without restriction, including without limitation the rights to
-	use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-	of the Software, and to permit persons to whom the Software is furnished to do
-	so, subject to the following conditions:
-
-	The above copyright notice and this permission notice shall be included in all
-	copies or substantial portions of the Software.
-
-	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-	SOFTWARE.
 ]]
 
 --shorthand
@@ -38,72 +12,8 @@ love.window.setMode(0, 0, {
 	fullscreen = "desktop"
 })
 
--------------------------------------------------------------------------------
---various helper functions
-
---convert an image to a canvas so we can render to it
-function image_to_canvas(i)
-	local c = lg.newCanvas(i:getWidth(), i:getHeight(), {format = i:getFormat()})
-	lg.setCanvas(c)
-	lg.draw(i)
-	lg.setCanvas()
-	return c
-end
-
---generate a rg32f square texture
-function rg_square(res)
-	return lg.newCanvas(res, res, {format = "rg32f"})
-end
-
---generate a 0-1 random xy texture, useful for positions on a unit square perhaps!
-function random_xy_01(res)
-	local id = love.image.newImageData(res, res, "rg32f")
-	id:mapPixel(function()
-		return love.math.random(), love.math.random(), 0, 1
-	end)
-	return image_to_canvas(lg.newImage(id))
-end
-
---generate a random xy signed texture, useful for starting velocities
-function random_xy_signed(res, scale)
-	local c = rg_square(res)
-	lg.push("all")
-	lg.setCanvas(c)
-	for i,v in ipairs {
-		"add", "subtract"
-	} do
-		lg.setBlendMode(v)
-		for y = 0, res - 1 do
-			for x = 0, res - 1 do
-				lg.setColor(love.math.random() * scale, love.math.random() * scale, 0, 1)
-				lg.points(x, y)
-			end
-		end
-	end
-	lg.pop()
-	return c
-end
-
---generate a mesh with just uv verts, covering an entire texture
-function uv_mesh(w, h, mode, extra)
-	--mesh for drawing points into terrain
-	local verts = {}
-	local o = (extra and 0 or 1)
-	for y = 0, h - o do
-		for x = 0, w - o do
-			table.insert(verts, {
-				(x + 0.5) / w,
-				(y + 0.5) / h
-			})
-		end
-	end
-	local mesh = lg.newMesh({
-		{"a_uv", "float", 2},
-		{"VertexPosition", "float", 2}, --unused but required
-	}, (w - o + 1) * (h - o + 1), mode, "static")
-	mesh:setVertices(verts)
-	return mesh
-end
+require("util")
+require("batteries"):export()
 
 -------------------------------------------------------------------------------
 --terrain generation - dumb fractal noise
@@ -668,6 +578,24 @@ function love.keypressed(k)
 			love.event.quit("restart")
 		elseif k == "q" then
 			love.event.quit()
+		elseif k == "s" then
+			--save out images
+			for _, v in ipairs {
+				{"i_height", sim.terrain},
+				{"i_sediment", sim.sediment},
+				{"i_flow", sim.flow},
+			} do
+				local n, t = table.unpack2(v)
+				n = ("%s-%d.png"):format(n, os.time())
+				local f = io.open(n, "wb")
+				if f then
+					local id = love.image.newImageData(t:getDimensions())
+					id:paste(t:newImageData(), 0, 0)
+					local s = id:encode("png"):getString()
+					f:write(s)
+					f:close()
+				end
+			end
 		end
 	else
 		if k == "r" then
