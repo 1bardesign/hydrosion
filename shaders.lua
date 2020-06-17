@@ -76,23 +76,9 @@ void effect() {
 	//integrate
 	float step_size = 1.0 / max(abs(nvel.x), abs(nvel.y));
 	pos += (nvel * step_size) / u_terrain_res;
+	
 	//collide - bounce off walls
-	const float bounce_amount = 1.0;
-	vec2 min_vel_push = vec2(1.0) / u_terrain_res;
-	if (pos.x < 0.0) {
-		vel.x = max(min_vel_push.x, abs(vel.x)) * bounce_amount;
-		pos.x = 0.0;
-	} else if (pos.x > 1.0) {
-		vel.x = max(min_vel_push.x, abs(vel.x)) * -bounce_amount;
-		pos.x = 1.0;
-	}
-	if (pos.y < 0.0) {
-		vel.y = max(min_vel_push.y, abs(vel.y)) * bounce_amount;
-		pos.y = 0.0;
-	} else if (pos.y > 1.0) {
-		vel.y = max(min_vel_push.y, abs(vel.y)) * -bounce_amount;
-		pos.y = 1.0;
-	}
+	
 
 	//evaporate linear
 	volume.x -= 1.0 / u_evap_iters;
@@ -193,7 +179,7 @@ uniform Image sediment;
 uniform Image flow;
 uniform vec2 terrain_res;
 
-uniform vec3 scale;
+uniform vec3 u_scale;
 uniform float u_rotation;
 
 uniform vec3 u_low_col;
@@ -224,7 +210,7 @@ vec4 position(mat4 t, vec4 p) {
 	p.xy -= vec2(0.5);
 	p.xy = rotate(p.xy, u_rotation);
 
-	p.xyz *= scale;
+	p.xyz *= u_scale;
 
 	p.yz = rotate(p.yz, -1.0);
 	p.z *= -0.001;
