@@ -59,13 +59,23 @@ function gen_terrain(res, pixel_per_km, seed)
 	t_id:mapPixel(function(x, y)
 		local n = fn(x, y, 0.001 * res / pixel_per_km, 16)
 		
-		local xf = x / res
-		local yf = y / res
-		local d = 1 - math.max(
-			math.max(xf, 1 - xf),
-			math.max(yf, 1 - yf)
-		) * 2
-		return d * n
+		local xf = math.smoothstep(x / res)
+		local yf = math.smoothstep(y / res)
+
+		local dx = (xf - 0.5)
+		local dy = (yf - 0.5)
+
+		local d = math.sqrt(dx * dx + dy * dy) * 1.5
+
+		return math.lerp(
+			math.lerp(0.7, 0.8, n),
+			math.lerp(
+				math.lerp(0.0, 1.0, n),
+				math.lerp(0.3, 0.4, n),
+				math.clamp01(1 - d * 2)
+			),
+			math.clamp01(1 - d)
+		)
 	end)
 
 	return t_id

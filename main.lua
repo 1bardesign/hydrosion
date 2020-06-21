@@ -21,7 +21,7 @@ require("erosion")
 -------------------------------------------------------------------------------
 --our terrain
 
-local terrain_res = 512
+local terrain_res = 800
 local terrain_scale = 512
 local terrain = gen_terrain(terrain_res, terrain_scale, love.math.random(1, 100000))
 local tw, th = terrain:getDimensions()
@@ -71,7 +71,7 @@ function load_terrain(id)
 		dissolve_rate = 0.025,
 		sediment_rate = 0.05,
 		max_dissolved = 0.01,
-		vel_evap = 0.5,
+		vel_evap = 0.25,
 	})
 
 	terrain_shader:send("terrain", terrain)
