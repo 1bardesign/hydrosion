@@ -38,6 +38,7 @@ uniform Image u_pos;
 uniform Image u_volume;
 
 uniform float u_evap_iters;
+uniform float u_vel_evap_factor;
 
 uniform float u_dissolve_rate;
 uniform float u_sediment_rate;
@@ -76,12 +77,27 @@ void effect() {
 	//integrate
 	float step_size = 1.0 / max(abs(nvel.x), abs(nvel.y));
 	pos += (nvel * step_size) / u_terrain_res;
-	
-	//collide - bounce off walls
-	
+
+	//collision behaviours
+	const int col_type = 0;
+	if (col_type == 0) {
+		//do nothing
+	} else if (col_type == 1) {
+		//clamp
+		pos = clamp(pos, vec2(0.0), vec2(1.0));
+		//todo: modify vel when hit edge
+	} else if (col_type == 2) {
+		//wrap
+		pos = fract(pos);
+	}
 
 	//evaporate linear
 	volume.x -= 1.0 / u_evap_iters;
+
+	//evaporate in proportion with vel
+	volume.x -= vellen * u_vel_evap_factor;
+
+	volume.x = max(0.0, volume.x);
 
 	//displace volume based on speed and sediment capacity
 	//get the maximum possible amount to subtract - half the amount of soil in the hill we've just come down
@@ -89,25 +105,24 @@ void effect() {
 	float max_dissolve_now = (terrain_previous - terrain_current) * 0.5;
 
 	//amount terrain normal "disagrees" with velocity
-	float turb = clamp(
-		(1.0 - dot(nvel, terrain_norm)) * 0.5,
-		0.0, 1.0
-	);
+	float turb = -dot(nvel, terrain_norm);
+	float lamin = clamp(1.0 - turb, 0.0, 1.0);
+	turb = clamp(turb, 0.0, 1.0);
 
 	//dissolve in
 	float dissolve_amount = clamp(
 		vellen * u_dissolve_rate,
 		0.0, max_dissolve_now
-	) * turb;
+	) * mix(0.5, 1.0, turb);
 	volume.y += dissolve_amount;
 
 	//sediment out
 	float max_dissolved = max(
 		carry_capacity(volume.x, vellen),
-		volume.y - u_sediment_rate
+		volume.y - u_sediment_rate * mix(0.5, 1.0, lamin)
 	);
 	if (volume.y > max_dissolved) {
-		volume.y = max_dissolved;
+		volume.y = max(volume.y - u_sediment_rate, max_dissolved);
 	}
 
 	//writeout MRT

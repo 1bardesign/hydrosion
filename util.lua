@@ -2,8 +2,8 @@
 --various helper functions
 
 --convert an image to a canvas so we can render to it
-function image_to_canvas(i)
-	local c = lg.newCanvas(i:getWidth(), i:getHeight(), {format = i:getFormat()})
+function image_to_canvas(i, format)
+	local c = lg.newCanvas(i:getWidth(), i:getHeight(), {format = format or i:getFormat()})
 	lg.setCanvas(c)
 	lg.draw(i)
 	lg.setCanvas()

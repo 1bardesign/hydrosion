@@ -21,10 +21,13 @@ require("erosion")
 -------------------------------------------------------------------------------
 --our terrain
 
-local terrain_res = 1024
-local terrain_scale = 1024
+local terrain_res = 512
+local terrain_scale = 512
 local terrain = gen_terrain(terrain_res, terrain_scale, love.math.random(1, 100000))
 local tw, th = terrain:getDimensions()
+
+--todo: collision mode dependent wrapping
+-- terrain:setWrap("repeat")
 
 -------------------------------------------------------------------------------
 --visualisation stuff
@@ -55,18 +58,20 @@ local sim
 local v_rotation = 0.0
 local v_zoom = 1.0
 
---boot and reboot
-function love.load()
-	terrain = gen_terrain(terrain_res, terrain_scale, love.math.random(1, 100000))
+function load_terrain(id)
+	terrain = image_to_canvas(lg.newImage(id), "r32f")
 	tw, th = terrain:getDimensions()
+
+	sim_iters = 500
 
 	sim = erosion({
 		terrain = terrain,
 		res = 64,
-		initial_vel = 15.0,
+		initial_vel = 1.0,
 		dissolve_rate = 0.025,
 		sediment_rate = 0.05,
-		max_dissolved = 0.075,
+		max_dissolved = 0.01,
+		vel_evap = 0.5,
 	})
 
 	terrain_shader:send("terrain", terrain)
@@ -82,10 +87,15 @@ function love.load()
 	terrain_shader:send("u_cliff_col",    {0.4, 0.2, 0.2})
 end
 
+--boot and reboot
+function love.load()
+	load_terrain(gen_terrain(terrain_res, terrain_scale, love.math.random(1, 100000)))
+end
+
 --simulate if space held down
 function love.update(dt)
 	if love.keyboard.isDown("space") then
-		sim:do_pass(800)
+		sim:do_pass(sim_iters)
 	end
 
 	local spin_speed = math.pi * 0.25 * dt
@@ -156,8 +166,10 @@ function love.keypressed(k)
 				n = ("%s-%d.png"):format(n, os.time())
 				local f = io.open(n, "wb")
 				if f then
-					local id = love.image.newImageData(t:getDimensions())
-					id:paste(t:newImageData(), 0, 0)
+					local tid = t:newImageData()
+					local w, h = t:getDimensions()
+					local id = love.image.newImageData(w, h, "rgba16")
+					id:paste(tid, 0, 0)
 					local s = id:encode("png"):getString()
 					f:write(s)
 					f:close()
@@ -169,4 +181,11 @@ function love.keypressed(k)
 			love.load()
 		end
 	end
+end
+
+function love.filedropped(f)
+	f:open("r")
+	local bd = f:read("data")
+	local id = love.image.newImageData(bd)
+	load_terrain(id)
 end

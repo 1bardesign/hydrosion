@@ -13,6 +13,8 @@ function erosion(arg)
 		tw = tw,
 		th = th,
 		initial_vel = arg.initial_vel or 0.1,
+
+		vel_evap = arg.vel_evap or 0.1,
 		--
 		terrain = arg.terrain,
 		terrain_res = {tw, th},
@@ -66,10 +68,11 @@ function erosion(arg)
 				integrate_shader:send("u_vel", self.old.vel)
 				integrate_shader:send("u_pos", self.old.pos)
 				integrate_shader:send("u_volume", self.old.volume)
-				integrate_shader:send("u_evap_iters", iters)
 				integrate_shader:send("u_dissolve_rate", self.dissolve_rate)
 				integrate_shader:send("u_sediment_rate", self.sediment_rate)
 				integrate_shader:send("u_max_carry_frac", self.max_dissolved)
+				integrate_shader:send("u_evap_iters", iters)
+				integrate_shader:send("u_vel_evap_factor", self.vel_evap)
 				lg.setCanvas(self.current.canvas_setup)
 				lg.draw(self.old.vel)
 

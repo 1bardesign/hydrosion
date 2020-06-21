@@ -50,8 +50,23 @@ function gen_terrain(res, pixel_per_km, seed)
 		end
 		return 0.5 + (t / c) * 0.75
 	end
+	--perlin mountains
+	-- t_id:mapPixel(function(x, y)
+	-- 	return fn(x, y, 0.001 * res / pixel_per_km, 16)
+	-- end)
+
+	--well
 	t_id:mapPixel(function(x, y)
-		return fn(x, y, 0.001 * res / pixel_per_km, 16)
+		local n = fn(x, y, 0.001 * res / pixel_per_km, 16)
+		
+		local xf = x / res
+		local yf = y / res
+		local d = 1 - math.max(
+			math.max(xf, 1 - xf),
+			math.max(yf, 1 - yf)
+		) * 2
+		return d * n
 	end)
-	return image_to_canvas(lg.newImage(t_id))
+
+	return t_id
 end
